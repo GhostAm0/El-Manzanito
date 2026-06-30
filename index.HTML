@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Manzanito</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        #popup-notificacion {
+            position: fixed;
+            bottom: -150px; /* Escondido al inicio */
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            z-index: 9999;
+            width: auto;
+            max-width: 280px;
+            font-family: inherit;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Estado 1: Aparece el cuadro grande */
+        #popup-notificacion.estado-visible {
+            bottom: 20px;
+        }
+
+        /* Estado 2: Se colapsa y solo queda el círculo */
+        #popup-notificacion.estado-colapsado .globo-texto {
+            opacity: 0;
+            transform: scale(0.5) translate(20px);
+            pointer-events: none;
+            position: absolute; /* Lo saca del flujo para que no estorbe */
+        }
+
+        /* El cuadro de diálogo blanco */
+        .globo-texto {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.12);
+            border: 1px solid #e5e5e7;
+            position: relative;
+            transform-origin: bottom right;
+            transition: all 0.4s ease;
+        }
+
+        .globo-texto p {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1d1d1f;
+            padding-right: 15px;
+        }
+
+        .globo-texto .subtext {
+            font-size: 12px;
+            color: #25D366; /* Verde WhatsApp */
+            font-weight: 600;
+        }
+
+        .cerrar-aviso {
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            font-size: 16px;
+            color: #86868b;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* El botón circular de WhatsApp */
+        .icono-circular-wa {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background-color: #25D366;
+            border-radius: 50%;
+            box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4);
+            position: relative;
+            transition: transform 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .icono-circular-wa:active {
+            transform: scale(0.9);
+        }
+
+        .svg-wa {
+            width: 32px;
+            height: 32px;
+        }
+
+        /* El globito rojo de notificación "1" */
+        .badge-alerta {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background-color: #ff3b30; /* Rojo Apple de alerta */
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #25D366;
+        }
+        .logo-canasta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 65px;
+            height: 65px;
+            background-color: #fff1f2; /* Fondo rosa/rojo sutil */
+            border-radius: 18px;
+            font-size: 32px;
+            position: relative;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 10px rgba(225, 29, 72, 0.1);
+        }
+
+        .destello {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            font-size: 16px;
+            animation: brillar 2s infinite ease-in-out;
+        }
+
+        @keyframes brillar {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f5f5f5;
+            color: #1d1d1f;
+            padding-bottom: 40px;
+        }
+
+        header {
+            background-color: #ffffff;
+            text-align: center;
+            padding: 16px 20px;
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1d1d1f;
+            margin-bottom: 5px;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            font-size: 14px;
+            color: #585872;
+            font-weight: 500;
+        }
+
+        .producto {
+            background-color: #ffffff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .producto img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .info-producto {
+            padding: 10px;
+        }
+
+        .info-producto h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .precio {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0071e3;
+            margin-bottom: 10px;
+        }
+
+        .descripcion {
+            font-size: 14px;
+            color: #515154;
+            line-height: 1.2;
+            margin-bottom: 18px;
+        }
+
+        .btn-Whatsapp {
+            display: block;
+            width: 100%;
+            background-color: #25d366;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+            padding: 13px 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3);
+            border-radius: 18px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-Whatsapp:active {
+            background-color: #128c7e;
+        }
+
+        .categorias {
+            display: flex;
+            gap: 8px;
+            padding: 5px 16px;
+            background-color: #ffffff;
+            overflow-x: auto;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #e5e5e7;
+        }
+
+        .categorias::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            display: inline-block;
+            background-color: #f5f5f5;
+            color: #1d1d1f;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover, .tab-btn:active {
+
+            background-color: #0071e3;
+            color: #ffffff;
+        }
+
+        .seccion-categoria {
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .titulo-categoria {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #86868b;
+            border-left: 4px solid #0071e3;
+            padding-left: 5px;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-canasta">
+        🧺
+        <span class="destello">🍎</span>
+        </div>
+
+        <div id="popup-notificacion" class="estado-oculto">
+            <div class="globo-texto">
+                <span class="cerrar-aviso" onclick="colapsarAhora(event)">×</span>
+                <p>¿No encuentras lo que buscas?</p>
+                <span class="subtext">Pregúntanos por WhatsApp</span>
+            </div>
+            
+            <!-- El botón circular que se quedará en la esquina -->
+            <a href="https://wa.me/5214811063680?text=%C2%A1Hola%21%20Estoy%20revisando%20el%20cat%C3%A1logo%20pero%20no%20encuentro%20el%20producto%20exacto%20que%20busco.%20%C2%BFMe%20podr%C3%ADan%20ayudar%3F" target="_blank" class="icono-circular-wa">
+                <span class="badge-alerta">1</span>
+                <svg viewBox="0 0 24 24" class="svg-wa"><path fill="#FFF" d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.432 2.521 1.222 3.504l-.8 2.922 2.993-.785a5.737 5.737 0 0 0 3.351.133 5.76 5.76 0 0 0 4.767-4.747 5.767 5.767 0 0 0-5.765-6.793zm3.931 8.211c-.161.453-.807.828-1.118.868-.311.04-.627.06-.975-.045-.349-.105-.733-.231-1.341-.494-1.921-.832-3.211-2.718-3.321-2.868-.111-.15-.899-1.196-.899-2.285 0-1.089.569-1.624.771-1.836.202-.213.442-.266.59-.266h.42c.111 0 .26.012.392.327.143.342.494 1.206.536 1.294.043.089.062.19.003.312-.06.121-.121.202-.202.298-.082.096-.172.215-.244.29-.089.092-.182.19-.079.367.103.176.458.756.98 1.222.673.601 1.242.787 1.419.876.177.089.28.077.382-.041.103-.118.443-.516.562-.695.118-.179.24-.148.399-.09.159.059 1.013.477 1.184.563.172.086.287.13.33.202.043.073.043.423-.118.876z"/></svg>
+            </a>
+        </div>
+        <h1>El Manzanito</h1>
+        <p>Aparta por WhatsApp y recoge en tienda</p>
+    </header>
+
+   <nav class="categorias">
+        <a href="#herramientas" class="tab-btn">Ferreteria y taller</a>
+        <a href="#hogar" class="tab-btn">Hogar y cocina </a>
+        <a href="#Motos" class="tab-btn">Motos</a>
+        <a href="#Bicicletas" class="tab-btn">Bicicletas</a>
+        <a href="#Juegos" class="tab-btn">Juegos de mesa</a>
+        <a href="#Juguetes" class="tab-btn">Juguetes</a>
+        <a href="#Bebes" class="tab-btn">Bebés</a>
+        <a href="#tecnologia" class="tab-btn">Tecnologia</a>
+    </nav>
+
+    <main class="catalogo">
+        <section id="herramientas" class="seccion-categoria">
+            <h2 class="titulo-categoria">Ferreteria y taller</h2>
+            <article class ="producto">
+                <img src="img/Lampara led.webp" alt="Lampara led">
+                <div class="info-producto">
+                    <h2>Lampara de mano</h2>
+                    <p class="precio">Precio: $120.00</p>
+                    <p class="descripcion">
+                        • 4 modos de iluminación<br>
+                        • Batería recargable vía USB-C<br>
+                        • Base magnética para fijar en metal<br>
+                        • Ideal para mecánicos y emergencias
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Lampara%20de%20mano" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/ChapasPuerta.webp" alt="Chapas de puerta">
+                <div class="info-producto">
+                    <h2>Bisagras de acero cuadrada de 3"</h2>
+                    <p class="precio">Precio: $85.00</p>
+                    <p class="descripcion">
+                        • Largo: 3"<br>
+                        • Material: Acero<br>
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/destornilladores.webp" alt="destornilladores">
+                <div class="info-producto">
+                    <h2>Juego de 2 destornilladores</h2>
+                    <p class="precio">Precio: $50.00</p>
+                    <p class="descripcion">
+                        • 2 tipos de punta (plana y cruz)<br>
+                        • Material: Acero<br>
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/candado.webp" alt="Candado">
+                <div class="info-producto">
+                    <h2>Candado de hierro 3 llaves</h2>
+                    <p class="precio">Precio: $65.00</p>
+                    <p class="descripcion">
+                        • 10 funciones<br>
+                        • Material: Acero inoxidable<br>
+                        • Ideal para camping y emergencias
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+
+            <article class="producto">
+                <img src="img/Switch.webp" alt="Interruptor">
+                <div class="info-producto">
+                    <h2>Interruptor de pared</h2>
+                    <p class="precio">Precio: $78.00</p>
+                    <p class="descripcion">
+                        • Color blanco<br>
+                        • 2 switches<br>
+                        • Ideal para reemplazo de interruptores antiguos
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/fusibles.webp" alt="Fusibles">
+                <div class="info-producto">
+                    <h2>Fusible con agarradera</h2>
+                    <p class="precio">Precio: $25.00 C/u</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/cinta_aislante.webp" alt="Cinta aislante">
+                <div class="info-producto">
+                    <h2>Cinta aislante eléctrico</h2>
+                    <p class="precio">Precio: $40.00</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/soquet reforzado.webp" alt="Soquet sencillo">
+                <div class="info-producto">
+                    <h2>Socket sencillo</h2>
+                    <p class="precio">Precio: $26.00</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/soquet_reforzado.webp" alt="Soquet exterior">
+                <div class="info-producto">
+                    <h2>Socket  REFORZADO para exteriores</h2>
+                    <p class="precio">Precio: $35.00</p>
+                    <p class="descripcion">
+                        • Resistente a la intemperie<br>
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/hilo_desbrozadora.webp" alt="Hilo para desbrozadora">
+                <div class="info-producto">
+                    <h2>Hilo redondo para desbrozadora</h2>
+                    <p class="precio">Precio: $65.00</p>
+                    <p class="descripcion">• 12 metros de largo</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Moto" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/TorcedorG.webp" alt="Destorcedor">
+                <div class="info-producto">
+                    <h2>Destorcedor Grande 70Kg</h2>
+                    <p class="precio">Precio: $40.00</p>
+                    <p class="descripcion">
+                        • Soporta cargas de 70 Kg<br>
+                        • Espesor de 8ml<br>
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/Palancas_pcambio.webp" alt="Palancas de cambio">
+                <div class="info-producto">
+                    <h2>2 Palancas para cambio de llanta</h2>
+                    <p class="precio">Precio: $75.00</p>
+                    <p class="descripcion">
+                        • Material: Acero Templado<br>
+                        • Ideal para carretillas y motos<br>
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Switch%20para%20moto" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/Medidor.webp" alt="Multiherramienta">
+                <div class="info-producto">
+                    <h2>Flexometro/Medidor de 5 y 3 Metros</h2>
+                    <p class="precio">Precio: $80.00 | $60.00</p>
+                    <p class="descripcion">
+                        • Longitud: 5 y 3 Metros<br>
+                        • Material: Plástico resistente<br>
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/multicontacto.webp" alt="Multicontacto">
+                <div class="info-producto">
+                    <h2>Multicontacto para electrodomésticos</h2>
+                    <p class="precio">Precio: $200.00</p>
+                    <p class="descripcion">
+                        • 2 entradas usb<br>
+                        • Boton de encendido/apagado con luz indicadora<br>
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/multicontacto_sencillo.webp" alt="Multicontacto sencillo">
+                <div class="info-producto">
+                    <h2>Multicontacto domestico</h2>
+                    <p class="precio">Precio: $110.00</p>
+                    <p class="descripcion">
+                        • Soporta 125V 60Hz 10 A<br>
+                        • Ideal para interior y exterior<br>
+                        • 4 contactos <br>
+                        • Largo de 20cm
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/Extencion3MNaranja.webp" alt="Extencion Naranja">
+                <div class="info-producto">
+                    <h2>Cable extencion de 3 Metros</h2>
+                    <p class="precio">Precio: $80.00</p>
+                    <p class="descripcion">
+                        • Soporta 125V 60Hz 10 A<br>
+                        • Ideal para interior y exterior<br>
+                        • 4 salidas de corriente
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/ExtencionBlanco3M.webp" alt="Extencion sencillo">
+                <div class="info-producto">
+                    <h2>Cable extencion de 3 Metros</h2>
+                    <p class="precio">Precio: $60.00</p>
+                    <p class="descripcion">
+                        • Soporta 127V ~60Hz 13A<br>
+                        • 3 Metros de longitud<br>
+                        • 3 salidas de corriente
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+        </section>
+
+        <section id="Juegos" class="seccion-categoria">
+            <h2 class="titulo-categoria">Juegos de mesa</h2>
+            <div class="Cuadricula-productos">
+                <article class="producto">
+                    <img src="img/Barajas.webp" alt="Baraja española">
+                    <div class="info-producto">
+                        <h2>Baraja española</h2>
+                        <p class="precio">Precio: $35.00</p>
+                        <p class="descripcion">
+                            • Juego de mesa para toda la familia<br>
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Baraja%20española" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section id="Juguetes" class="seccion-categoria">
+            <h2 class="titulo-categoria">Juguetes</h2>
+                <article class="producto">
+                    <img src="img/Juguete_camion_g.webp" alt="Camion de juguete">
+                    <div class="info-producto">
+                        <h2>Camion de juguete</h2>
+                        <p class="precio">Precio: $70.00</p>
+                        <p class="descripcion">
+                            • Camion de juguete para niños<br>
+                            • Juegos al aire libre<br>
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Camion%20de%20juguete" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/juguete_camion.webp" alt="2 camiones de juguete chico">
+                    <div class="info-producto">
+                        <h2>2 camiones de juguete</h2>
+                        <p class="precio">Precio: $80.00</p>
+                        <p class="descripcion">
+                            • Juegos al aire libre<br>
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Camion%20de%20juguete" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+
+        <section id="hogar" class="seccion-categoria">
+            <h2 class="titulo-categoria">Hogar y Cocina</h2>
+
+            <article class="producto">
+                <img src="img/tijeras.webp" alt="Tijeras multiusos">
+                <div class="info-producto">
+                    <h2>Tijeras multiusos (Escuela/Oficina)</h2>
+                    <p class="precio">Precio: $35.00</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Multiherramienta" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <h3 class="Sub-titulo">Toppers y Contenedores</h3>
+            <div class="Cuadricula-productos">
+                <article class="producto">
+                    <img src="img/TopperCircular.webp" alt="Toppers hermeticos">
+                    <div class="info-producto">
+                        <h2>Toppers herméticos chicos</h2>
+                        <p class="precio">Precio: $60.00</p>
+                        <p class="descripcion">• Tamaño chico <br>
+                            • Herméticos
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20los%20Toppers%20y%20contenedores" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/TopperCircularVerde.webp" alt="Topper Circular">
+                    <div class="info-producto">
+                        <h2>Topper Circular</h2>
+                        <p class="precio">Precio: $35.00</p>
+                        <p class="descripcion">• Tamaño Chico<br>
+                            • Sellado de rosca
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20los%20Toppers%20y%20contenedores" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/2Toppers.webp" alt="2 Toppers chicos">
+                    <div class="info-producto">
+                        <h2>Toppers chicos</h2>
+                        <p class="precio">Precio: $40.00</p>
+                        <p class="descripcion">• Tamaño Chico<br>
+                            • Herméticos
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20los%20Toppers%20y%20contenedores" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/Toper.webp" alt="Topper negro chico">
+                    <div class="info-producto">
+                        <h2>Topper chico hermético</h2>
+                        <p class="precio">Precio: $60.00</p>
+                        <p class="descripcion">• Tamaño Chico<br>
+                            • Herméticos
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20los%20Toppers%20y%20contenedores" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/TopperCircularG.webp" alt="Topper transparente">
+                    <div class="info-producto">
+                        <h2>Topper Circular Transparente Mediano</h2>
+                        <p class="precio">Precio: $40.00</p>
+                        <p class="descripcion">• Tamaño Mediano<br>
+                            • Sellado a presión con sellado de silicón
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20los%20Toppers%20y%20contenedores" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/TopperGrande.webp" alt="Topper Grande cafe">
+                    <div class="info-producto">
+                        <h2>Topper Grande</h2>
+                        <p class="precio">Precio: $50.00</p>
+                        <p class="descripcion">• Tamaño Grande<br>
+                            • Sellado a presion
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20los%20Toppers%20y%20contenedores" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+
+            </div>
+            <h3 class="Sub-titulo">Vasos y Botellas para niños/adultos</h3>
+            <div class="Cuadricula-productos">
+                <article class="producto">
+                    <img src="img/VasosCPopote.webp" alt="Vaso con popote">
+                    <div class="info-producto">
+                        <h2>Vaso con popote Chicas Superpoderosas</h2>
+                        <p class="precio">Precio: $40.00</p>
+                        <p class="descripcion">• Material de plástico <br>
+                            • Diferentes Colores
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Vaso%20Rosa" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/VasoRosa.webp" alt="Vaso Rosa Hello Kitty">
+                    <div class="info-producto">
+                        <h2>Vaso Hello Kitty</h2>
+                        <p class="precio">Precio: $40.00</p>
+                        <p class="descripcion">• Vaso de plástico
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Vaso%20Rosa" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/VasoNiños.webp" alt="Vaso Niños Buzz Lightyear">
+                    <div class="info-producto">
+                        <h2>Vaso Buzz Lightyear</h2>
+                        <p class="precio">Precio: $40.00</p>
+                        <p class="descripcion">• Vaso de plástico
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Vaso%20Rosa" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/BotellaPato.webp" alt="Botella de Pato">
+                    <div class="info-producto">
+                        <h2>Botella Pato</h2>
+                        <p class="precio">Precio: $50.00</p>
+                        <p class="descripcion">• Material de plástico <br>
+                            • Cerrado a presion
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Vaso%20Rosa" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/BotellaOso.webp" alt="Botella de Oso">
+                    <div class="info-producto">
+                        <h2>Botella Forma de oso</h2>
+                        <p class="precio">Precio: $50.00</p>
+                        <p class="descripcion">• Material de plástico <br>
+                            • Colores Rosa, Azul y Verde Transparente <br>
+                            • Boquilla tipo tapon
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Botella%20Rosa" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/BotellaSnoppy.webp" alt="Botella Snoppy">
+                    <div class="info-producto">
+                        <h2>Botella Morada Snoppy</h2>
+                        <p class="precio">Precio: $60.00</p>
+                        <p class="descripcion">• Material de plástico <br>
+                            • Colore morado <br>
+                            • Boquilla tipo tapon
+                            • Diseño de diferentes colores
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Botella%20Rosa" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/BotellaPlastico.webp" alt="Botella Plástica Rosa 500ml">
+                    <div class="info-producto">
+                        <h2>Botella Rosa 500ml</h2>
+                        <p class="precio">Precio: $60.00</p>
+                        <p class="descripcion">• Material de plástico <br>
+                            • Colores Rosa, Azul y Verde Transparente <br>
+                            • Sello hermetico de plastico antiderramable
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Botella%20Rosa" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/BotellaBarbie.webp" alt="Botella Barbie">
+                    <div class="info-producto">
+                        <h2>Botella diseño Barbie</h2>
+                        <p class="precio">Precio: $60.00</p>
+                        <p class="descripcion">• Material de plástico <br>
+                            • Colore Rosa <br>
+                            • Boquilla de plastico sellado a presion
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Botella%20Rosa" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+                <article class="producto">
+                    <img src="img/BotellaGrandeAzul.webp" alt="Botella Plástica Grande Azul">
+                    <div class="info-producto">
+                        <h2>Botella azul grande</h2>
+                        <p class="precio">Precio: $70.00</p>
+                        <p class="descripcion">• Material de plástico <br>
+                            • Diferentes colores<br>
+                            • Sello de rosca con correa
+                        </p>
+                        <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Botella%20Azul" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section id="Bebes" class="seccion-categoria">
+            <h2 class="titulo-categoria">Bebés</h2>
+            <article class="producto">
+                <img src="img/BiberonesVaso.webp" alt="Biberones Vaso">
+                <div class="info-producto">
+                    <h2>Biberones de Vaso 120 ml</h2>
+                    <p class="precio">Precio: $35.00</p>
+                    <p class="descripcion">• 120 ml<br>
+                        • Con tapa de rosca<br>
+                        • Diseño de animales y colores variados
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Topper%20Circular" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+            <article class="producto">
+                <img src="img/BiberonesManija.webp" alt="Chupon con manija para bebé">
+                <div class="info-producto">
+                    <h2>Chupon con manija</h2>
+                    <p class="precio">Precio: $25.00 C/U</p>
+                    <p class="descripcion">
+                        • Sin BPA<br>
+                        • Manija para mejor agarre<br>
+                        • Diseño de animales y colores variados
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Topper%20Circular" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+            <article class="producto">
+                <img src="img/ChuponBebe.webp" alt="Chupon para Bebé">
+                <div class="info-producto">
+                    <h2>Chupón con miel</h2>
+                    <p class="precio">Precio: $20.00 C/U</p>
+                    <p class="descripcion">• Libre de BPA<br>
+                        • Colores variados
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Topper%20Circular" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+        </section>
+
+        <section id="Motos" class="seccion-categoria">
+            <h2 class="titulo-categoria">Motos</h2>
+            <article class="producto">
+                <img src="img/Camara DM200.webp" alt="Camaras">
+                <div class="info-producto">
+                    <h2>Camara rodada: 3.00-17 para DM200</h2>
+                    <p class="precio">Precio: $100.00</p>
+                    <p class="descripcion">Rodada 3.00-17</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Moto" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+            
+            <article class="producto">
+                <img src="img/camara_moto275.webp" alt="Camaras">
+                <div class="info-producto">
+                    <h2>Camara rodada: 2.75/3.00-18</h2>
+                    <p class="precio">Precio: $85.00</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Moto" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/CadenaMoto.webp" alt="Cadena para moto">
+                <div class="info-producto">
+                    <h2>Cadena para moto 428HX126</h2>
+                    <p class="precio">Precio: $170.00</p>
+                    <p class="descripcion">
+                        • Compatible con modelos de motocicletas estándar
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20las%20Palancas%20de%20Cambio" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/rodillos_centrifugos.webp" alt="Rodillos ">
+                <div class="info-producto">
+                    <h2>Rodillos Centrifugos para modelos Italika</h2>
+                    <p class="precio">Precio: $90.00</p>
+                    <p class="descripcion">
+                        • ATV-150 06-11 <br>
+                        • ATV-150 SPORT 11-12 <br>
+                        • ATV-150 SPORT C/REVERSA 12-17 <br>
+                        • CS-125 14-17 <br>
+                        • CS-125 LED 1
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Freno%20Delantero" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/tazas_direccion125z.webp" alt="Tazas de dirección">
+                <div class="info-producto">
+                    <h2>Tazas de dirección para Italika</h2>
+                    <p class="precio">Precio: $85.00</p>
+                    <p class="descripcion">
+                        Compatible con modelos:
+                        <br>• Italika 125-Z 16-25
+                        <br>• Italika DT-125CL 17-21 
+                        <br>• Italika DT-125DEL 17-25
+                        <br>• Italika DT-125SP 17-22
+                        <br>• Italika DT-150CL 17-24
+                        <br>• Italika DT-150DEL 17-25
+                        <br>• FORZA-125 05-12
+                        <br>• FT-125CL 12-16
+                        <br>• FT-125DEL14-16
+                        <br>• FT-150S 15-18
+                        <br>• Italika FT-150TS
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Freno%20Delantero" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/juego_gomasde_impacto.webp" alt="Juego de gomas de impacto">
+                <div class="info-producto">
+                    <h2>Juego de gomas de impacto</h2>
+                    <p class="precio">Precio: $65.00</p>
+                    <p class="descripcion">
+                        • Compatible con modelos Italika 125, 150 y 200cc
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Freno%20Delantero" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/Bugias.webp" alt="Bugias">
+                <div class="info-producto">
+                    <h2>Bugias para moto NGK</h2>
+                    <p class="precio">Precio: $80.00</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Moto" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/foco_alogeno.webp" alt="Foco Alógeno">
+                <div class="info-producto">
+                    <h2>Foco halógeno para moto</h2>
+                    <p class="precio">Precio: $60.00</p>
+                    <p class="descripcion">
+                        • Alta luminosidad<br>
+                        • Bajo consumo de energía<br>
+                        • Fácil instalación
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Freno%20Delantero" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/foco_led_moto.webp" alt="Foco LED para moto">
+                <div class="info-producto">
+                    <h2>Foco LED para moto</h2>
+                    <p class="precio">Precio: $150.00</p>
+                    <p class="descripcion">
+                        • Alta luminosidad<br>
+                        • Bajo consumo de energía<br>
+                        • Fácil instalación
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Foco%20LED" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/led_pmoto.webp" alt="Foco LED para moto">
+                <div class="info-producto">
+                    <h2>Foco LED para moto</h2>
+                    <p class="precio">Precio: $150.00</p>
+                    <p class="descripcion">
+                        • Alta luminosidad<br>
+                        • Bajo consumo de energía<br>
+                        • Fácil instalación
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Freno%20Delantero" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/switch_moto.webp" alt="Switch para moto">
+                <div class="info-producto">
+                    <h2>Switch para moto (ON/OFF)
+                    <p class="precio">Precio: $50.00</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Switch%20para%20moto" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+
+            <article class="producto">
+                <img src="img/FrenoTracero.webp" alt="Freno Tracero">
+                <div class="info-producto">
+                    <h2>Freno(balatas) Tracero Italika </h2>
+                    <p class="precio">Precio: $85.00</p>
+                    <p class="descripcion">
+                        • Compatible con modelos Italika 125, 150 y 200cc
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Freno%20Tracero" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/CortadorCad.webp" alt="Cortador de cadena">
+                <div class="info-producto">
+                    <h2>Cortador de cadena tipo pinza para motocicleta</h2>
+                    <p class="precio">Precio: $200.00</p>
+                    <p class="descripcion">
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Freno%20Delantero" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+        </section>
+
+        <section id="Bicicletas" class="seccion-categoria">
+            <h2 class="titulo-categoria">Bicicletas</h2>
+
+            <article class="producto">
+                <img src="img/camara_bici.webp" alt="Camara de bicicleta">
+                <div class="info-producto">
+                    <h2>Camara rodada: 29 X 2.125</h2>
+                    <p class="precio">Precio: $85.00</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Cadena%20de%20bici" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/camarabici3.webp" alt="Camara de bicicleta">
+                <div class="info-producto">
+                    <h2>Camara rodada: 20 X 2.125</h2>
+                    <p class="precio">Precio: $75.00</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Cadena%20de%20bici" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/ManijaBici.webp" alt="Manija de bicicleta">
+                <div class="info-producto">
+                    <h2>Manija de bicicleta</h2>
+                    <p class="precio">Precio: $55.00</p>
+                    <p class="descripcion">Unico diseño disponible<br>
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20la%20Manija%20de%20bici" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+            <article class="producto">
+                <img src="img/estrella_cambios.webp" alt="Estrella de cambios">
+                <div class="info-producto">
+                    <h2>Estrella de cambios de 6 velocidades</h2>
+                    <p class="precio">Precio: $130.00</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Freno%20de%20bici" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+        </section>
+
+        
+
+        <section id="tecnologia" class="seccion-categoria">
+            <h2 class="titulo-categoria">Tecnología</h2>
+            <article class="producto">
+                <img src="img/CargadorTipoC.webp" alt="Cargador Tipo C">
+                <div class="info-producto">
+                    <h2>Cargador Tipo C</h2>
+                    <p class="precio">Precio: $90.00</p>
+                    <p class="descripcion"> Caja y cargador de carga rapida de 2.0A color blanco</p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Cargador%20Tipo%20C" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+            <article class="producto">
+                <img src="img/CableTipoC.webp" alt="Cable Tipo C">
+                <div class="info-producto">
+                    <h2>Cable tipo C con base de regalo</h2>
+                    <p class="precio">Precio: $70.00</p>
+                    <p class="descripcion">
+                        • Color blanco<br>
+                        • Solo incluye cable<br>
+                    </p>
+                    <a href="https://wa.me/5214811063680?text=Hola!%20Quiero%20apartar%20el%20Interruptor%20de%20pared" class="btn-Whatsapp">Apartar por WhatsApp</a>
+                </div>
+            </article>
+
+        </section>
+    </main>
+
+    <script>
+// CONTROL DE LA NOTIFICACIÓN EVOLUTIVA
+window.addEventListener('DOMContentLoaded', () => {
+    const elPopup = document.getElementById('popup-notificacion');
+    
+    if (elPopup) {
+        // PASO 1: A los 10 segundos aparece el cuadro grande con texto
+        setTimeout(() => {
+            elPopup.classList.add('estado-visible');
+            
+            // PASO 2: 6 segundos después de aparecer, se encoge solo y se hace burbuja
+            setTimeout(() => {
+                colapsarAlerta();
+            }, 6000); 
+
+        }, 10000); 
+    }
+});
+
+// Función para encoger el cuadro y dejar solo la burbuja flotante
+function colapsarAlerta() {
+    const elPopup = document.getElementById('popup-notificacion');
+    if (elPopup) {
+        elPopup.classList.add('estado-colapsado');
+    }
+}
+
+// Por si el cliente le da clic manualmente a la "X" de cerrar
+function colapsarAhora(event) {
+    event.stopPropagation(); // Evita que se abra el link al picar la X
+    colapsarAlerta();
+}
+    </script>
+
+</body>
+</html>
